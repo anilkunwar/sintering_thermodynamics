@@ -12,7 +12,7 @@ import shutil
 
 # Streamlit app configuration
 st.title("2D Phase-Field Sintering Simulation (Increased Barrier Height)")
-st.write("Based on Biswas et al. (2016) and Moelans et al. (2011) - Higher free energy barrier to suppress vapor growth.")
+st.write("Finite difference method to solve the PDEs.")
 
 # Initialize session state for geometry
 if "geometry_confirmed" not in st.session_state:
