@@ -8,16 +8,18 @@ import io
 import time
 from pathlib import Path
 import shutil
+import plotly
+import kaleido
 import plotly.io as pio
 
 # Set Chrome path for Kaleido in Streamlit Cloud
 os.environ['CHROME_PATH'] = '/usr/bin/chromium-browser'
-pio.kaleido.scope.chromium_args = (
-    "--no-sandbox",
-    "--disable-gpu",
-    "--disable-dev-shm-usage",
-    f"--executable-path={os.environ['CHROME_PATH']}"
-)
+
+# Display Plotly and Kaleido versions for debugging
+st.write(f"Plotly version: {plotly.__version__}")
+st.write(f"Kaleido version: {kaleido.__version__}")
+if kaleido.__version__ < '0.2.1':
+    st.warning("Kaleido version is older than 0.2.1, which may cause issues with image saving. Please update to kaleido>=0.2.1 in requirements.txt.")
 
 # Physical scales
 L0 = 10e-6  # meters (10 µm)
@@ -523,5 +525,5 @@ st.markdown("""
 - Mobility exponent = -6 (α = 10⁻⁶) ensures slow diffusion.
 - Interface width δ = 5 µm ensures numerical stability with dx = 1 µm.
 - Particle centers are normalized (0 to 1) relative to domain size (x_max = nx × dx µm).
-- For Streamlit Cloud, ensure 'chromium-browser' and 'chromium-chromedriver' are in packages.txt to enable PNG downloads.
+- For Streamlit Cloud, ensure 'chromium-browser' and 'chromium-chromedriver' are in packages.txt, and 'plotly>=5.0.0' and 'kaleido>=0.2.1' are in requirements.txt.
 """)
