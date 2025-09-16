@@ -5,5 +5,4 @@
 
 
 # Phase Field Model
-To be continued ...
 [![phasefieldmodelsintering2d](https://img.shields.io/badge/twograinsmodel-streamlit-red)](https://sintering-2dphasefieldmethod.streamlit.app/)
