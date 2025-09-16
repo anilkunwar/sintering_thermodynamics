@@ -8,6 +8,16 @@ import io
 import time
 from pathlib import Path
 import shutil
+import plotly.io as pio
+
+# Set Chrome path for Kaleido in Streamlit Cloud
+os.environ['CHROME_PATH'] = '/usr/bin/chromium-browser'
+pio.kaleido.scope.chromium_args = (
+    "--no-sandbox",
+    "--disable-gpu",
+    "--disable-dev-shm-usage",
+    f"--executable-path={os.environ['CHROME_PATH']}"
+)
 
 # Physical scales
 L0 = 10e-6  # meters (10 µm)
@@ -18,6 +28,12 @@ M0 = 1e-14  # m⁵/(J·s) (mobility scale)
 # Streamlit app configuration
 st.title("2D Phase-Field Sintering Simulation (Physical Units)")
 st.write("Finite difference method to solve PDEs for sintering of powder grains (diameters ~10–40 µm) over 1–10 s.")
+
+# Warning about Chrome dependency
+st.warning(
+    "This app requires Chromium to save Plotly images. Ensure 'chromium-browser' and 'chromium-chromedriver' "
+    "are listed in packages.txt for Streamlit Cloud, or install Google Chrome manually for local environments."
+)
 
 # Initialize session state for geometry
 if "geometry_confirmed" not in st.session_state:
@@ -169,7 +185,7 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
         f_h_i = [f * h_i_j for h_i_j in h_i]
         return c_h_i2, eta_i2, f_h_i
 
-    def plot_free_energy_vs_c(c, eta, nx, ny):
+    def plot_free_energy_vs_c(c, eta, nx, ny, t):
         mid_y = ny // 2
         c_line = c[:, mid_y]
         eta_mid = [eta_i[:, mid_y] for eta_i in eta]
@@ -354,9 +370,10 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
                 plot_file = output_dir / f"{name}_t{t:.3f}.png"
                 try:
                     fig.write_image(str(plot_file), engine="kaleido")
+                    plot_files[name] = (fig, plot_file)
                 except Exception as e:
-                    st.warning(f"Failed to save Plotly image for {name} at t={t:.3f} s: {str(e)}")
-                plot_files[name] = (fig, plot_file)
+                    st.warning(f"Failed to save Plotly image for {name} at t={t:.3f} s: {str(e)}. Displaying interactively.")
+                    plot_files[name] = (fig, None)
 
             for i in range(min(N+1, 5)):
                 name = f"f_h_{i+1}"
@@ -371,18 +388,20 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
                 plot_file = output_dir / f"{name}_t{t:.3f}.png"
                 try:
                     fig.write_image(str(plot_file), engine="kaleido")
+                    plot_files[name] = (fig, plot_file)
                 except Exception as e:
-                    st.warning(f"Failed to save Plotly image for {name} at t={t:.3f} s: {str(e)}")
-                plot_files[name] = (fig, plot_file)
+                    st.warning(f"Failed to save Plotly image for {name} at t={t:.3f} s: {str(e)}. Displaying interactively.")
+                    plot_files[name] = (fig, None)
 
             # Save free energy plot for storage
-            fig_energy = plot_free_energy_vs_c(c, eta, nx, ny)
+            fig_energy = plot_free_energy_vs_c(c, eta, nx, ny, t)
             energy_plot_file = output_dir / f"free_energy_vs_c_t{t:.3f}.png"
             try:
                 fig_energy.write_image(str(energy_plot_file), engine="kaleido")
+                plot_files["free_energy_vs_c"] = (fig_energy, energy_plot_file)
             except Exception as e:
-                st.warning(f"Failed to save free energy plot at t={t:.3f} s: {str(e)}")
-            plot_files["free_energy_vs_c"] = (fig_energy, energy_plot_file)
+                st.warning(f"Failed to save free energy plot at t={t:.3f} s: {str(e)}. Displaying interactively.")
+                plot_files["free_energy_vs_c"] = (fig_energy, None)
 
             outputs.append((t, vts_file, plot_files, c, eta))  # Store c, eta for later use
             next_output_time += output_interval
@@ -444,7 +463,7 @@ if st.button("Run Simulation"):
             
             st.write("**Free Energy Density vs. c**")
             # Regenerate the free energy plot to avoid duplicate ID
-            fig_energy = plot_free_energy_vs_c(c, eta, nx, ny)
+            fig_energy = plot_free_energy_vs_c(c, eta, nx, ny, t)
             st.plotly_chart(fig_energy, use_container_width=True)
             
             try:
@@ -457,17 +476,18 @@ if st.button("Run Simulation"):
                     )
             except FileNotFoundError:
                 st.warning(f"VTS file {vts_file.name} not found.")
-            for name, (_, plot_file) in plot_files.items():
-                try:
-                    with open(plot_file, "rb") as f:
-                        st.download_button(
-                            label=f"Download {name} Plot (t={t:.3f} s)",
-                            data=f,
-                            file_name=plot_file.name,
-                            mime="image/png"
-                        )
-                except FileNotFoundError:
-                    st.warning(f"Plot file {plot_file.name} not found.")
+            for name, (fig, plot_file) in plot_files.items():
+                if plot_file is not None:
+                    try:
+                        with open(plot_file, "rb") as f:
+                            st.download_button(
+                                label=f"Download {name} Plot (t={t:.3f} s)",
+                                data=f,
+                                file_name=plot_file.name,
+                                mime="image/png"
+                            )
+                    except FileNotFoundError:
+                        st.warning(f"Plot file {plot_file.name} not found.")
 
         st.header("Total Free Energy Over Time")
         times, F_values = zip(*free_energies)
@@ -495,7 +515,7 @@ st.markdown("""
 8. View Plotly heatmaps for c, η_1 (vapor), η_2 to η_{N+1} (grains), c·h_i², η_i², and f·h_i every 1 s.
 9. Check free energy density vs. c plot (in MJ/m³).
 10. Verify total free energy (µJ) decreases over time.
-11. Download .vts files for ParaView and PNG plots.
+11. Download .vts files for ParaView and PNG plots (requires Chromium).
 12. Use 'Clear Output Files' to remove temporary files.
 
 ### Notes
@@ -503,4 +523,5 @@ st.markdown("""
 - Mobility exponent = -6 (α = 10⁻⁶) ensures slow diffusion.
 - Interface width δ = 5 µm ensures numerical stability with dx = 1 µm.
 - Particle centers are normalized (0 to 1) relative to domain size (x_max = nx × dx µm).
+- For Streamlit Cloud, ensure 'chromium-browser' and 'chromium-chromedriver' are in packages.txt to enable PNG downloads.
 """)
