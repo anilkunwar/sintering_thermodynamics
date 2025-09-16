@@ -1,2 +1,6 @@
 streamlit 
 numpy
+matplotlib
+plotly
+pyvista
+shutil
