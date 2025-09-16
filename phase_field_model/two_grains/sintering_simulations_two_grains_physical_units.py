@@ -62,9 +62,7 @@ st.session_state.N = N
 st.sidebar.header(f"Particle Geometry (η_2 to η_{N+1})")
 x_max = nx * dx  # meters
 y_max = ny * dx  # meters
-#default_centers_frac = [(0.25, 0.75), (0.75, 0.75), (0.75, 0.25), (0.25, 0.25), (0.5, 0.5)] + [(0.5, 0.5)] * 5
 default_centers_frac = [(0.25, 0.5), (0.75, 0.5), (0.75, 0.25), (0.25, 0.25), (0.5, 0.5)] + [(0.5, 0.5)] * 5
-#default_radii = [0.2 * (x_max * 1e6), 0.15 * (x_max * 1e6), 0.1 * (x_max * 1e6), 0.08 * (x_max * 1e6), 0.12 * (x_max * 1e6)] + [0.1 * (x_max * 1e6)] * 5  # µm
 default_radii = [0.25 * (x_max * 1e6), 0.17 * (x_max * 1e6), 0.1 * (x_max * 1e6), 0.08 * (x_max * 1e6), 0.12 * (x_max * 1e6)] + [0.1 * (x_max * 1e6)] * 5  # µm
 max_radius = (x_max + y_max) * 0.5 * 1e6  # µm
 
@@ -177,7 +175,7 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
         eta_mid = [eta_i[:, mid_y] for eta_i in eta]
         f_line = free_energy_density(c_line, eta_mid) / 1e6  # MJ/m³
         fig = px.scatter(x=c_line, y=f_line, labels={"x": "c", "y": "Free Energy Density (MJ/m³)"},
-                         title="Free Energy Density vs. c (Middle Row)")
+                         title=f"Free Energy Density vs. c (Middle Row, t={t:.3f} s)")
         return fig
 
     def mobility(c, eta):
@@ -377,6 +375,7 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
                     st.warning(f"Failed to save Plotly image for {name} at t={t:.3f} s: {str(e)}")
                 plot_files[name] = (fig, plot_file)
 
+            # Save free energy plot for storage
             fig_energy = plot_free_energy_vs_c(c, eta, nx, ny)
             energy_plot_file = output_dir / f"free_energy_vs_c_t{t:.3f}.png"
             try:
@@ -385,7 +384,7 @@ def run_simulation(nx, ny, dx, dt, total_time, output_interval, A, B, kappa_c, k
                 st.warning(f"Failed to save free energy plot at t={t:.3f} s: {str(e)}")
             plot_files["free_energy_vs_c"] = (fig_energy, energy_plot_file)
 
-            outputs.append((t, vts_file, plot_files))
+            outputs.append((t, vts_file, plot_files, c, eta))  # Store c, eta for later use
             next_output_time += output_interval
 
         progress_bar.progress(min(step / n_steps, 1.0))
@@ -410,7 +409,7 @@ if st.button("Run Simulation"):
         st.success("Simulation complete!")
         
         st.header("Simulation Results")
-        for t, vts_file, plot_files in outputs:
+        for t, vts_file, plot_files, c, eta in outputs:
             st.subheader(f"Time t={t:.3f} s")
             
             st.write("**Density and Phase Fields**")
@@ -444,7 +443,9 @@ if st.button("Run Simulation"):
                             st.plotly_chart(plot_files[name][0], use_container_width=True)
             
             st.write("**Free Energy Density vs. c**")
-            st.plotly_chart(plot_files["free_energy_vs_c"][0], use_container_width=True)
+            # Regenerate the free energy plot to avoid duplicate ID
+            fig_energy = plot_free_energy_vs_c(c, eta, nx, ny)
+            st.plotly_chart(fig_energy, use_container_width=True)
             
             try:
                 with open(vts_file, "rb") as f:
