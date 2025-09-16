@@ -50,7 +50,7 @@ m_t = st.sidebar.slider("Translational Mobility m_t", 100.0, 300.0, 200.0)
 c_0 = st.sidebar.slider("Equilibrium Density c_0", 0.9, 1.0, 0.9816)
 
 # User-defined number of particles N
-N = st.sidebar.slider("Number of Powder Particles (N)", 1, 10, 5)
+N = st.sidebar.slider("Number of Powder Particles (N)", 1, 10, 2)
 st.session_state.N = N
 
 # Geometry input for N particles with normalized centers
