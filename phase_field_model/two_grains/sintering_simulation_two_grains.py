@@ -12,7 +12,7 @@ import shutil
 
 # Streamlit app configuration
 st.title("2D Phase-Field Sintering Simulation (Increased Barrier Height)")
-st.write("Finite difference method to solve the PDEs.")
+st.write("Finite difference method to solve the PDEs related to sintering of two powder grains. Though the model is formulated for two grains, it is flexible to any N number of grains")
 
 # Initialize session state for geometry
 if "geometry_confirmed" not in st.session_state:
