@@ -64,7 +64,8 @@ x_max = nx * dx  # meters
 y_max = ny * dx  # meters
 #default_centers_frac = [(0.25, 0.75), (0.75, 0.75), (0.75, 0.25), (0.25, 0.25), (0.5, 0.5)] + [(0.5, 0.5)] * 5
 default_centers_frac = [(0.25, 0.5), (0.75, 0.5), (0.75, 0.25), (0.25, 0.25), (0.5, 0.5)] + [(0.5, 0.5)] * 5
-default_radii = [0.2 * (x_max * 1e6), 0.15 * (x_max * 1e6), 0.1 * (x_max * 1e6), 0.08 * (x_max * 1e6), 0.12 * (x_max * 1e6)] + [0.1 * (x_max * 1e6)] * 5  # µm
+#default_radii = [0.2 * (x_max * 1e6), 0.15 * (x_max * 1e6), 0.1 * (x_max * 1e6), 0.08 * (x_max * 1e6), 0.12 * (x_max * 1e6)] + [0.1 * (x_max * 1e6)] * 5  # µm
+default_radii = [0.25 * (x_max * 1e6), 0.15 * (x_max * 1e6), 0.1 * (x_max * 1e6), 0.08 * (x_max * 1e6), 0.12 * (x_max * 1e6)] + [0.1 * (x_max * 1e6)] * 5  # µm
 max_radius = (x_max + y_max) * 0.5 * 1e6  # µm
 
 centers = []
